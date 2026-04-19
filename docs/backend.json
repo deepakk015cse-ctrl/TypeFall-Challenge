@@ -1,0 +1,40 @@
+
+{
+  "entities": {
+    "Score": {
+      "title": "Score",
+      "description": "A player's game score recorded in the global leaderboard",
+      "type": "object",
+      "properties": {
+        "playerName": {
+          "type": "string",
+          "description": "The display name of the player"
+        },
+        "score": {
+          "type": "number",
+          "description": "The score achieved by the player"
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"],
+          "description": "The difficulty setting of the game"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the score was recorded"
+        }
+      },
+      "required": ["playerName", "score", "difficulty", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["anonymous"]
+  },
+  "firestore": {
+    "/scores/{scoreId}": {
+      "schema": "Score",
+      "description": "Global collection of high scores"
+    }
+  }
+}
