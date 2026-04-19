@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useCallback, createRef, useMemo } from 'react';
@@ -38,6 +37,7 @@ type Word = {
 
 export default function TypeFallGame() {
   const db = useFirestore();
+  const [hasMounted, setHasMounted] = useState(false);
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'gameOver'>('menu');
   const [isPaused, setIsPaused] = useState(false);
   const [score, setScore] = useState(0);
@@ -60,14 +60,12 @@ export default function TypeFallGame() {
   const spawnIntervalId = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalId = useRef<NodeJS.Timeout | null>(null);
 
-  // We use a Map to track internal word positions to avoid React state overhead every frame
   const wordsInternalRef = useRef(new Map<number, { y: number; speed: number; ref: React.RefObject<HTMLSpanElement> }>());
 
   const { baseSpeed, increment, spawnRate: baseSpawnRate, spawnDecrement } = DIFFICULTY_SETTINGS[difficulty];
   const spawnRate = Math.max(MIN_SPAWN_RATE, baseSpawnRate - (level - 1) * spawnDecrement);
   const wordSpeed = baseSpeed + (level - 1) * increment;
 
-  // Leaderboard fetching
   const leaderboardQuery = useMemo(() => {
     if (!db) return null;
     return query(collection(db, 'scores'), orderBy('score', 'desc'), limit(10));
@@ -75,6 +73,7 @@ export default function TypeFallGame() {
   const { data: leaderboard } = useCollection(leaderboardQuery);
 
   useEffect(() => {
+    setHasMounted(true);
     const savedHighScore = localStorage.getItem('typefallHighScore');
     if (savedHighScore) {
       setHighScore(parseInt(savedHighScore, 10));
@@ -121,7 +120,6 @@ export default function TypeFallGame() {
         if (word.ref.current) {
           word.ref.current.style.transform = `translateY(${word.y}px)`;
         }
-        // Only mark for removal if gameHeight is detected (prevents instant removal on load)
         if (gameHeight > 0 && word.y >= gameHeight) {
           wordsToRemove.push(id);
         }
@@ -286,14 +284,20 @@ export default function TypeFallGame() {
     </div>
   );
 
+  if (!hasMounted) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground overflow-hidden relative">
+        <div className="stars pointer-events-none opacity-50"></div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground font-headline overflow-hidden relative">
-        {/* Space Background Layers */}
         <div className="stars pointer-events-none opacity-50"></div>
         <div className="twinkling pointer-events-none opacity-60"></div>
         <div className="clouds pointer-events-none opacity-20"></div>
         
-        {/* Dynamic Celestial Elements */}
         <div className="absolute top-[10%] left-[15%] w-32 h-32 rounded-full bg-gradient-to-br from-purple-600/30 to-blue-900/10 blur-xl pointer-events-none animate-pulse"></div>
         <div className="absolute top-[20%] right-[10%] pointer-events-none opacity-40">
             <Moon className="w-24 h-24 text-primary fill-primary/20 blur-[1px]" />
